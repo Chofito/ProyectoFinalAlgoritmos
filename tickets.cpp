@@ -60,6 +60,38 @@ void deleteTicket(string issue) {
     writeJsonFile(filename, tickets);
 }
 
+void deleteTicketsByUser(string email) {
+    string filename = "tickets.json";
+
+    json tickets = readJsonFile(filename);
+
+    for (auto it = tickets["tickets"].begin(); it != tickets["tickets"].end(); ++it) {
+        if ((*it)["reportedBy"].get<string>() == email) {
+            it = tickets["tickets"].erase(it);
+        }
+    }
+
+    writeJsonFile(filename, tickets);
+}
+
+json getTicket(string issue) {
+    string filename = "tickets.json";
+
+    json tickets = readJsonFile(filename);
+
+    for (auto& item : tickets["tickets"]) {
+        if (item["issue"].get<string>() == issue) {
+            return item;
+        }
+    }
+
+    return json::parse(R"(
+      {
+        "issue": "not found"
+      }
+    )");
+}
+
 bool checkIfTicketExists(string issue) {
     string filename = "tickets.json";
 

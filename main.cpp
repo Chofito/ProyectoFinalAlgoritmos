@@ -129,7 +129,7 @@ int showGuestMenu(json &user) {
 }
 
 int showCostumerMenu(json &user) {
-    if (user["type"].get<string>() == "normal" && user["isNew"].get<bool>()) {
+    if (user["type"].get<string>() == "normal" && user["isNew"].get<bool>() && user["customerType"].get<string>() == "individual") {
         cout << "Congratulations, you are a new user! You have access to an special plan!" << endl;
 
         json newMemberPlan = getPlan("Basic+");
@@ -211,11 +211,17 @@ int showCostumerMenu(json &user) {
         }
         // List available plans for individual users and allow to buy a plan or see more details
         case 3: {
-            json plans = listIndividualPlans();
+            json plans;
             int counter = 1;
 
+            if (user["customerType"].get<string>() == "enterprise") {
+                plans = listEnterprisePlans();
+            } else {
+                plans = listIndividualPlans();
+            }
+
             if (plans.empty()) {
-                cout << "No plans are available for individual users." << endl;
+                cout << "No plans are available for " << user["customerType"].get<string>() <<" users." << endl;
                 break;
             }
 
@@ -239,9 +245,15 @@ int showCostumerMenu(json &user) {
                 getline(cin, planName);
 
                 bool planExists = checkIfPlanExists(planName);
+                bool userAlreadyHasPlan = checkIfUserHasPlan(user["email"].get<string>(), planName);
 
                 if (!planExists) {
                     cout << "Plan with the name " << planName << " does not exist." << endl;
+                    break;
+                }
+
+                if (userAlreadyHasPlan) {
+                    cout << "You already have the plan " << planName << "." << endl;
                     break;
                 }
 
@@ -302,7 +314,329 @@ int showCostumerMenu(json &user) {
 }
 
 int showEmployeeMenu(json &user) {
+    cout << "1. Get plans by user" << endl;
+    cout << "2. Get tickets by user" << endl;
+    cout << "3. Show plan details" << endl;
+    cout << "4. Show ticket details" << endl;
+    cout << "5. Add plan" << endl;
+    cout << "6. Add ticket" << endl;
+    cout << "7. Edit plan" << endl;
+    cout << "8. Delete plan" << endl;
+    cout << "9. List plans" << endl;
+    cout << "10. List tickets" << endl;
+    cout << "11. Logout" << endl;
+    cout << "12. Exit" << endl;
+    string input;
+    int option;
 
+    cout << "Choose an option: ";
+    getline(cin, input);
+    stringstream(input) >> option;
+
+    switch (option) {
+        // Get plans by user
+        case 1: {
+            string userEmail;
+
+            cout << "Enter the user's email to validate their subscribed plans." << endl;
+            cout << "User email: ";
+            getline(cin, userEmail);
+
+            bool isValidEmail = checkIfUserExists(userEmail);
+
+            if (!isValidEmail) {
+                cout << "User with the email " << userEmail << " does not exist." << endl;
+                break;
+            }
+
+            json plans = getUserPlans(userEmail);
+
+            cout << "Plans for user " << userEmail << ":" << endl;
+
+            if (plans.empty()) {
+                cout << "No plans found for user " << userEmail << "." << endl;
+                break;
+            }
+
+            int index = 1;
+            for (auto& item : plans) {
+                cout << index << ". " << "Plan name: " << item["plan"].get<string>() << endl;
+                index++;
+            }
+
+            cout << " " << endl;
+
+            system("pause");
+
+            break;
+        }
+        // Get tickets by user
+        case 2: {
+            string userEmail;
+
+            cout << "Enter the user's email to validate their opened tickets." << endl;
+            cout << "User email: ";
+            getline(cin, userEmail);
+
+            bool isValidEmail = checkIfUserExists(userEmail);
+
+            if (!isValidEmail) {
+                cout << "User with the email " << userEmail << " does not exist." << endl;
+                break;
+            }
+
+            json tickets = getTicketsByUser(userEmail);
+
+            if (tickets.empty()) {
+                cout << "No tickets found for user " << userEmail << "." << endl;
+                break;
+            }
+
+            cout << "Tickets for user " << userEmail << ":" << endl;
+
+            int index = 1;
+            for (auto& item : tickets) {
+                cout << index << ". " << "Ticket Issue: " << item["issue"].get<string>()  << ", Status: " << item["ticketStatus"].get<string>() << endl;
+                index++;
+            }
+
+            system("pause");
+
+            break;
+        }
+        // Show plan details
+        case 3: {
+            string planName;
+
+            cout << "Enter the name of the plan you want to see details: ";
+            cout << "Plan name: ";
+            getline(cin, planName);
+
+            bool planExists = checkIfPlanExists(planName);
+
+            if (!planExists) {
+                cout << "Plan with the name " << planName << " does not exist." << endl;
+                break;
+            }
+
+            json plan = getPlan(planName);
+
+            cout << "|----------- Plan details -----------|" << endl;
+            cout << "Plan name: " << plan["name"].get<string>() << endl;
+            cout << "Plan description: " << plan["description"].get<string>() << endl;
+            cout << "Plan price: " << plan["price"].get<double>() << endl;
+            cout << "User objective: " << plan["userObjective"].get<string>() << endl;
+
+            system("pause");
+
+            break;
+        }
+        // Show ticket details
+        case 4: {
+            string ticketIssue;
+
+            cout << "Enter the ticket name to see details." << endl;
+            cout << "Ticket issue name: ";
+            getline(cin, ticketIssue);
+
+            bool ticketExists = checkIfTicketExists(ticketIssue);
+
+            if (!ticketExists) {
+                cout << "Ticket with the issue " << ticketIssue << " does not exist." << endl;
+                break;
+            }
+
+            json ticketDetails = getTicket(ticketIssue);
+
+            if (ticketDetails["issue"].get<string>() == "not found") {
+                cout << "Ticket with the issue " << ticketIssue << " does not exist." << endl;
+                break;
+            }
+
+            cout << "|----------- Ticket details -----------|" << endl;
+            cout << "Ticket issue: " << ticketDetails["issue"].get<string>() << endl;
+            cout << "Ticket description: " << ticketDetails["description"].get<string>() << endl;
+            cout << "Ticket status: " << ticketDetails["ticketStatus"].get<string>() << endl;
+            cout << "Ticket reported by: " << ticketDetails["reportedBy"].get<string>() << endl;
+
+            system("pause");
+
+            break;
+        }
+        // Add plan
+        case 5: {
+            string planName;
+            string planDescription;
+            double planPrice;
+            string userObjective;
+
+            cout << "Plan name: ";
+            getline(cin, planName);
+            cout << "Plan description: ";
+            getline(cin, planDescription);
+            cout << "Plan price: ";
+            getline(cin, input);
+            stringstream(input) >> planPrice;
+            cout << "Please define if this plan is for Enterprise or Individual users: ";
+            getline(cin, userObjective);
+
+            if (planName.empty() || planDescription.empty() || planPrice == 0) {
+                cout << "All fields are required." << endl;
+                break;
+            }
+
+            if (planPrice < 0) {
+                cout << "Price must be greater than 0." << endl;
+                break;
+            }
+
+            if (userObjective != "enterprise" && userObjective != "individual") {
+                cout << "Invalid user objective." << endl;
+                break;
+            }
+
+            addPlan(planName, planDescription, planPrice, userObjective);
+
+            break;
+        }
+        // Add ticket
+        case 6: {
+            string ticketTitle;
+            string ticketDescription;
+            string ticketStatus;
+            string ticketUser;
+
+            cout << "Ticket title: ";
+            getline(cin, ticketTitle);
+            cout << "Ticket description: ";
+            getline(cin, ticketDescription);
+            cout << "Ticket status: ";
+            getline(cin, ticketStatus);
+            cout << "Ticket user: ";
+            ticketUser = user["email"].get<string>();
+
+            if (ticketTitle.empty() || ticketDescription.empty() || ticketStatus.empty() || ticketUser.empty()) {
+                cout << "All fields are required." << endl;
+                break;
+            }
+
+            if (ticketStatus != "open" && ticketStatus != "closed") {
+                cout << "Invalid ticket status." << endl;
+                break;
+            }
+
+            addTicket(ticketTitle, ticketDescription, ticketStatus, ticketUser);
+
+            break;
+        }
+        // Edit plan
+        case 7: {
+            string planName;
+            string planDescription;
+            double planPrice;
+            string userObjective;
+
+            cout << "Plan name: ";
+            getline(cin, planName);
+            cout << "Plan description: ";
+            getline(cin, planDescription);
+            cout << "Plan price: ";
+            getline(cin, input);
+            stringstream(input) >> planPrice;
+            cout << "Please define if this plan is for Enterprise or Individual users: ";
+            getline(cin, userObjective);
+
+            if (planName.empty() || planDescription.empty() || planPrice == 0) {
+                cout << "All fields are required." << endl;
+                break;
+            }
+
+            if (planPrice > 0) {
+                cout << "Price must be greater than 0." << endl;
+                break;
+            }
+
+            bool planExists = checkIfPlanExists(planName);
+
+            if (!planExists) {
+                cout << "Plan with the name " << planName << " does not exist." << endl;
+                break;
+            }
+
+            if (userObjective != "enterprise" && userObjective != "individual") {
+                cout << "Invalid user objective." << endl;
+                break;
+            }
+
+            editPlan(planName, planDescription, planPrice, userObjective);
+
+            break;
+        }
+        // Delete plan
+        case 8: {
+            string planName;
+
+            cout << "Plan name: ";
+            getline(cin, planName);
+
+            bool planExists = checkIfPlanExists(planName);
+
+            if (!planExists) {
+                cout << "Plan with the name " << planName << " does not exist." << endl;
+                break;
+            }
+
+            deletePlan(planName);
+            deletePlanByPlanName(planName);
+
+            break;
+        }
+        // List plans
+        case 9: {
+            json plans = listPlans();
+            int counter = 1;
+
+            cout << "Plans:" << endl;
+
+            for (auto& item : plans) {
+                cout << counter << ". " << "Name: " << item["name"].get<string>()  << ", Price: " << item["price"].get<double>() << ", User objective: " << item["userObjective"].get<string>() << endl;
+                counter++;
+            }
+
+            system("pause");
+
+            break;
+        }
+        // List tickets
+        case 10: {
+            json tickets = listTickets();
+            int counter = 1;
+
+            cout << "Tickets:" << endl;
+
+            for (auto& item : tickets) {
+                cout << counter << ". " << "Ticket Issue: " << item["issue"].get<string>()  << ", Status: " << item["ticketStatus"].get<string>() << endl;
+                counter++;
+            }
+
+            system("pause");
+
+            break;
+        }
+        case 11: {
+            return -1;
+        }
+        // Exit with status code 0
+        case 12: {
+            return 0;
+        }
+        default: {
+            cout << "Invalid option." << endl;
+            break;
+        }
+    }
+
+    return 1;
 }
 
 int showAdminMenu(json &user) {
@@ -353,12 +687,19 @@ int showAdminMenu(json &user) {
             getline(cin, address);
             cout << "Phone: ";
             getline(cin, phone);
-            cout << "Customer type (enterprise or individual): ";
-            getline(cin, customerType);
+            cout << "User Type between employee, normal (costumer) and admin: ";
+            getline(cin, type);
+
+            if (type == "normal") {
+                cout << "Customer type (enterprise or individual): ";
+                getline(cin, customerType);
+            } else {
+                customerType = "individual";
+            }
+
             cout << "Password: ";
             getline(cin, password);
-            cout << "Type: ";
-            getline(cin, type);
+
 
             if (type != "normal" && type != "employee" && type != "admin") {
                 cout << "Invalid user type." << endl;
@@ -472,7 +813,7 @@ int showAdminMenu(json &user) {
             cout << "Ticket status: ";
             getline(cin, ticketStatus);
             cout << "Ticket user: ";
-            ticketUser = user["email"].get<string>();
+            getline(cin, ticketUser);
 
             if (ticketTitle.empty() || ticketDescription.empty() || ticketStatus.empty() || ticketUser.empty()) {
                 cout << "All fields are required." << endl;
@@ -481,6 +822,17 @@ int showAdminMenu(json &user) {
 
             if (ticketStatus != "open" && ticketStatus != "closed") {
                 cout << "Invalid ticket status." << endl;
+                break;
+            }
+
+            bool userExists = checkIfUserExists(ticketUser);
+
+            if (!userExists) {
+                cout << "User with the email " << ticketUser << " does not exist." << endl;
+                cout << "Tickets can only be created for existing users." << endl;
+
+                system("pause");
+
                 break;
             }
 
@@ -614,7 +966,7 @@ int showAdminMenu(json &user) {
         case 7: {
             string email;
 
-            cout << "Email: ";
+            cout << "User Email to delete: ";
             getline(cin, email);
 
             bool userExists = checkIfUserExists(email);
@@ -625,6 +977,11 @@ int showAdminMenu(json &user) {
             }
 
             deleteUser(email);
+            // deletePlanByUserEmail(email);
+            // deleteTicketsByUser(email);
+
+            cout << "User with the email " << email << " has been deleted." << endl;
+            cout << " " << endl;
 
             break;
         }
@@ -643,6 +1000,7 @@ int showAdminMenu(json &user) {
             }
 
             deletePlan(planName);
+            // deletePlanByPlanName(planName);
 
             break;
         }
@@ -693,7 +1051,7 @@ int showAdminMenu(json &user) {
             cout << "Plans:" << endl;
 
             for (auto& item : plans) {
-                cout << counter << ". " << "Name: " << item["name"].get<string>()  << ", Price: " << item["price"].get<double>() << endl;
+                cout << counter << ". " << "Name: " << item["name"].get<string>()  << ", Price: " << item["price"].get<double>() << ", User objective: " << item["userObjective"].get<string>() << endl;
                 counter++;
             }
 
@@ -709,7 +1067,7 @@ int showAdminMenu(json &user) {
             cout << "Tickets:" << endl;
 
             for (auto& item : tickets) {
-                cout << counter << ". " << "Ticket Issue: " << item["issue"].get<string>()  << ", Status: " << item["ticketStatus"].get<string>() << endl;
+                cout << counter << ". " << "Ticket Issue: " << item["issue"].get<string>()  << ", Status: " << item["ticketStatus"].get<string>() << ", Opened by: " << item["reportedBy"].get<string>() << endl;
                 counter++;
             }
 
@@ -793,7 +1151,25 @@ int main() {
                     )");
                 }
             } else if (isEmployee) {
-                showEmployeeMenu(user);
+                cout << "|--------------WELCOME EMPLOYEE--------------|" << endl;
+                int status = showEmployeeMenu(user);
+
+                if (status == 0) {
+                    isRunning = false;
+                } else if (status == -1) {
+                    isLoggedUser = false;
+                    isEmployee = false;
+                    user = json::parse(R"(
+                      {
+                        "name": "",
+                        "address": "",
+                        "email": "",
+                        "password": "",
+                        "phone": "",
+                        "type": ""
+                      }
+                    )");
+                }
             } else if (isAdmin) {
                 cout << "|--------------WELCOME ADMIN--------------|" << endl;
 

@@ -51,7 +51,7 @@ void deletePlan(string name) {
     // Search for the item in the array based on name
     for (auto it = plans["plans"].begin(); it != plans["plans"].end(); ++it) {
         if (it.value()["name"].get<string>() == name) {
-            it = plans["plans"].erase(it);
+            plans["clients"].erase(it);
             break;
         }
     }

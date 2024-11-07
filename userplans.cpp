@@ -32,6 +32,62 @@ void addUserPlan(string userEmail, string plan) {
     writeJsonFile(filename, userplans);
 }
 
+void deleteUserPlan(string userEmail, string plan) {
+    string filename = "userplans.json";
+
+    json userplans = readJsonFile(filename);
+
+    for (auto it = userplans["userPlans"].begin(); it != userplans["userPlans"].end(); ++it) {
+        if (it.value()["userEmail"].get<string>() == userEmail && it.value()["plan"].get<string>() == plan) {
+            userplans["userPlans"].erase(it);
+        }
+    }
+
+    writeJsonFile(filename, userplans);
+}
+
+void deletePlanByUserEmail(string userEmail) {
+    string filename = "userplans.json";
+
+    json userplans = readJsonFile(filename);
+
+    for (auto it = userplans["userPlans"].begin(); it != userplans["userPlans"].end(); ++it) {
+        if ((*it)["userEmail"].get<string>() == userEmail) {
+            it = userplans["userPlans"].erase(it);
+        }
+    }
+
+    writeJsonFile(filename, userplans);
+}
+
+void deletePlanByPlanName(string planName) {
+    string filename = "userplans.json";
+
+    json userplans = readJsonFile(filename);
+
+    for (auto it = userplans["userPlans"].begin(); it != userplans["userPlans"].end(); ++it) {
+        if ((*it)["plan"].get<string>() == planName) {
+            it = userplans["userPlans"].erase(it);
+        }
+    }
+
+    writeJsonFile(filename, userplans);
+}
+
+bool checkIfUserHasPlan(string userEmail, string planName) {
+    string filename = "userplans.json";
+
+    json userplans = readJsonFile(filename);
+
+    for (auto& item : userplans["userPlans"]) {
+        if (item["userEmail"].get<string>() == userEmail && item["plan"].get<string>() == planName) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 json getUserPlans(string userEmail) {
     string filename = "userplans.json";
 

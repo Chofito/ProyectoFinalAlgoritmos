@@ -100,9 +100,12 @@ void deleteUser(string email) {
     json clients = readJsonFile(filename);
 
     // delete user based on email
-    clients["clients"].erase(std::remove_if(clients["clients"].begin(), clients["clients"].end(), [email](json& item) {
-        return item["email"].get<string>() == email;
-    }), clients["clients"].end());
+    for (auto it = clients["clients"].begin(); it != clients["clients"].end(); ++it) {
+        if ((*it)["email"].get<string>() == email) {
+            clients["clients"].erase(it);
+            break;
+        }
+    }
 
     writeJsonFile(filename, clients);
 }

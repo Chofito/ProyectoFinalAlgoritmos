@@ -5,6 +5,7 @@
 #include <fstream>
 #include "json.hpp"
 #include "initialsetup.h"
+#include "jsonutils.h"
 using namespace nlohmann;
 using namespace std;
 
@@ -34,6 +35,13 @@ void setupUserFile() {
     if (!inFile) {
         ofstream o(filename);
         o << defaultUser << std::endl;
+    } else {
+        json clients = readJsonFile(filename);
+
+        if (clients["clients"].empty()) {
+            ofstream o(filename);
+            o << clientsFileContent.dump(4) << std::endl;
+        }
     }
 }
 
@@ -59,6 +67,13 @@ void setupPlanFile() {
     if (!inFile) {
         ofstream o(filename);
         o << plansInitial << std::endl;
+    } else {
+        json plans = readJsonFile(filename);
+
+        if (plans["plans"].empty()) {
+            ofstream o(filename);
+            o << plansInitial.dump(4) << std::endl;
+        }
     }
 }
 

@@ -11,6 +11,10 @@ using namespace std;
 using namespace nlohmann;
 
 void addUserPlan(string username, string plan);
+void deleteUserPlan(string username, string plan);
+void deletePlanByUserEmail(string username);
+void deletePlanByPlanName(string planName);
+bool checkIfUserHasPlan(string username, string plan);
 json getUserPlans(string username);
 
 #endif //USERPLANS_H

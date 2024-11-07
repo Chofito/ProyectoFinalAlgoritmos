@@ -11,7 +11,9 @@ using namespace std;
 
 void addTicket(string issue, string description, string ticketStatus, string reportedBy);
 void editTicket(string issue, string description, string ticketStatus, string reportedBy);
+json getTicket(string issue);
 void deleteTicket(string issue);
+void deleteTicketsByUser(string email);
 bool checkIfTicketExists(string issue);
 json listTickets();
 json getTicketsByUser(string email);
